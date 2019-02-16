@@ -1,0 +1,54 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: rust:latest
+    steps:
+      - checkout
+      # Load cargo target from cache if possible.
+      # Multiple caches are used to increase the chance of a cache hit.
+      - restore_cache:
+          keys:
+            - v1-cargo-cache-{{ arch }}-{{ .Branch }}
+            - v1-cargo-cache-{{ arch }}
+
+      # Install nightly & wasm
+      - run:
+          name: Install Rust nightly
+          command: rustup update nightly && rustup default nightly
+      - run:
+          name: Add wasm32 target
+          command: rustup target add wasm32-unknown-unknown
+
+      # Install tools
+      - run:
+          name: Install wasm-bindgen-cli
+          command: >
+            curl -OL https://github.com/rustwasm/wasm-bindgen/releases/download/0.2.33/wasm-bindgen-0.2.33-x86_64-unknown-linux-musl.tar.gz
+            && tar xf wasm-bindgen-0.2.33-x86_64-unknown-linux-musl.tar.gz
+            && chmod +x wasm-bindgen-0.2.33-x86_64-unknown-linux-musl/wasm-bindgen
+            && mv wasm-bindgen-0.2.33-x86_64-unknown-linux-musl/wasm-bindgen* ~/.cargo/bin/
+      - run:
+          name: Install wasm-pack
+          command: >
+            curl -L https://github.com/rustwasm/wasm-pack/releases/download/v0.6.0/wasm-pack-v0.6.0-x86_64-unknown-linux-musl.tar.gz
+            | tar --strip-components=1 --wildcards -xzf - "*/wasm-pack"
+            && chmod +x wasm-pack
+            && mv wasm-pack ~/.cargo/bin/
+
+      # Show versions
+      - run:
+          name: Show versions
+          command: rustc --version && cargo --version
+
+      # Save cache
+      - save_cache:
+          key: v1-cargo-cache-{{ arch }}-{{ .Branch }}
+          paths:
+            - target
+            - /usr/local/cargo
+      - save_cache:
+          key: v1-cargo-cache-{{ arch }}
+          paths:
+            - target
+            - /usr/local/cargo
