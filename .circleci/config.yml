@@ -35,24 +35,27 @@ jobs:
             | tar --strip-components=1 --wildcards -xzf - "*/wasm-pack"
             && chmod +x wasm-pack
             && mv wasm-pack $CARGO_HOME/bin/
-      - run:
-          name: Install geckodriver
-          command: >
-            curl --retry 5 -LO https://github.com/mozilla/geckodriver/releases/download/v0.21.0/geckodriver-v0.21.0-linux64.tar.gz
-            && tar xf geckodriver-v0.21.0-linux64.tar.gz
 
-      # Install node
+      # Install node and browser testing tools
       - run:
           name: Install nodejs
           command: >
             curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.8/install.sh | bash
             && source ~/.nvm/nvm.sh
             && nvm install v10.5
+      - run:
+          name: Install latest firefox
+          command: wget -O - "https://download.mozilla.org/?product=firefox-latest-ssl&os=linux64&lang=en-US" | tar xj
+      - run:
+          name: Install geckodriver
+          command: >
+            curl --retry 5 -LO https://github.com/mozilla/geckodriver/releases/download/v0.21.0/geckodriver-v0.21.0-linux64.tar.gz
+            && tar xf geckodriver-v0.21.0-linux64.tar.gz
 
       # Run tests
       - run:
           name: Run all tests
-          command: GECKODRIVER=$(pwd)/geckodriver ./test.sh
+          command: GECKODRIVER=$(pwd)/geckodriver PATH=$(pwd)/firefox:$PATH ./test.sh
 
       # Show versions
       - run:
